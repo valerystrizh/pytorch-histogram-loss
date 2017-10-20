@@ -20,19 +20,20 @@ main.py --dataroot DATAROOT
 	[--nworkers NWORKERS]
 	[--out OUT] 
 
-required arguments:
---dataroot DATAROOT   path to dataset
+required argument:
+  --dataroot DATAROOT   		path to dataset
+  
 optional arguments:
-  -h, --help            show this help message and exit
-  --batchSizeTest BATCHSIZETEST     batch size for test and query dataloaders
-  --batchSizeTrain BATCHSIZETRAIN     batch size for train
-  --cuda     enables cuda
-  --lr LR     learning rate
-  --manualSeed MANUALSEED     manual seed
-  --nbins NBINS     number of bins in histograms
-  --nepoch NEPOCH     number of epochs to train
-  --nworkers NWORKERS     number of data loading workers
-  --out OUT     folder to output model checkpoints
+  -h, --help				show this help message and exit
+  --batchSizeTest BATCHSIZETEST		batch size for test and query dataloaders
+  --batchSizeTrain BATCHSIZETRAIN	batch size for train
+  --cuda				enables cuda
+  --lr LR				learning rate
+  --manualSeed MANUALSEED     		manual seed
+  --nbins NBINS     			number of bins in histograms
+  --nepoch NEPOCH     			number of epochs to train
+  --nworkers NWORKERS     		number of data loading workers
+  --out OUT     			folder to output model checkpoints
 ```
 
     $ # example
