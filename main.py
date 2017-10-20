@@ -166,7 +166,7 @@ for epoch in range(1, opt.nepoch + 1):
         print('rank1: {:.4f} mAP: {:.4f}'.format(ranks[1], mAP))
         
     if epoch % 10 == 0:
-        torch.save(model, '{}/finetuned_histogram_e{}.pt'.format(opt.out, opt.nepoch))
+        torch.save(model, '{}/finetuned_histogram_e{}.pt'.format(opt.out, epoch))
         
 time_elapsed = time.time() - since
 print('Training complete in {:.0f}m {:.0f}s'.format(
