@@ -25,14 +25,14 @@ required arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --batchSizeTest BATCHSIZETEST     batch size for test and query dataloaders
-  --batchSizeTrain BATCHSIZETRAIN     number of data loading workers
-  --cuda     number of data loading workers
-  --lr LR     number of data loading workers
-  --manualSeed MANUALSEED     number of data loading workers
-  --nbins NBINS     number of data loading workers
+  --batchSizeTrain BATCHSIZETRAIN     batch size for train
+  --cuda     enables cuda
+  --lr LR     learning rate
+  --manualSeed MANUALSEED     manual seed
+  --nbins NBINS     number of bins in histograms
   --nepoch NEPOCH     number of epochs to train
   --nworkers NWORKERS     number of data loading workers
-  --out OUT     number of data loading workers
+  --out OUT     folder to output model checkpoints
 ```
 
     $ # example
