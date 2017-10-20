@@ -1,6 +1,6 @@
 # Histogram Loss
 
-This is implementation of the paper [Learning Deep Embeddings with Histogram Loss](https://arxiv.org/pdf/1611.00822.pdf) in pytorch
+This is implementation of the paper [Learning Deep Embeddings with Histogram Loss](https://arxiv.org/pdf/1611.00822.pdf) in PyTorch
 
 Pretrained resnet 34 was used. Shared dropout with 0.2 probability and one fully connected layer with 512 neurons were added to the end of the net.
 
