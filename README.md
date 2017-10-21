@@ -4,7 +4,7 @@ This is implementation of the paper [Learning Deep Embeddings with Histogram Los
 
 Pretrained resnet 34 was used. Shared dropout with 0.2 probability and one fully connected layer with 512 neurons were added to the end of the net.
 
-After every 10 epochs, model is saved to `finetuned_histogram_e{}`. Statistics on loss, rank1 and mAP is saved in `loss_statistics.npy` and `rank1map_statistics.npy` files respectively.
+After every 10 epochs, model is saved to `finetuned_histogram_e{}`. Statistics on loss, rank1 and mAP is saved in `loss_statistics.csv` and `rank1map_statistics.csv` files respectively.
 
 ## Dataset
 [Market-1501 Dataset](http://www.liangzheng.org/Project/project_reid.html)
