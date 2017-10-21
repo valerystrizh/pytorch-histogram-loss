@@ -172,5 +172,5 @@ time_elapsed = time.time() - since
 print('Training complete in {:.0f}m {:.0f}s'.format(
     time_elapsed // 60, time_elapsed % 60))
 
-np.save('{}/loss_statistics'.format(opt.out), np.array(losses))
-np.save('{}/rank1map_statistics'.format(opt.out), np.array(rank1maps))
+np.savetxt('{}/loss_statistics.csv'.format(opt.out), np.array(losses), fmt="%d %.6f")
+np.savetxt('{}/rank1map_statistics.csv'.format(opt.out), np.array(rank1maps), fmt="%d %.6f %.6f")
