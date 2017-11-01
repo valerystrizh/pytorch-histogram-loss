@@ -4,7 +4,7 @@ This is implementation of the paper [Learning Deep Embeddings with Histogram Los
 
 Features before histogram loss should be l2 normalized. Use L2Normalization from layers.py.
 
-# Implementation details
+## Implementation details
 
 Pretrained resnet 34 was used. Shared dropout with 0.2 probability and one fully connected layer with 512 neurons were added to the end of the net.
 
