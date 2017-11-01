@@ -5,7 +5,7 @@ import torch
 from scipy.spatial.distance import cdist
 from torch.autograd import Variable
 
-class Evaluation(torch.nn.Module):
+class Evaluation():
     def __init__(self, df_test, df_query):
         self.test_labels, self.test_camera_labels, self.test_image_paths, self.test_image_names = get_info(df_test)
         self.query_labels, self.query_camera_labels, self.query_image_paths, self.query_image_names = get_info(df_query)
