@@ -48,5 +48,4 @@ optional arguments:
   --out OUT     			folder to output model checkpoints
 ```
 
-    $ # example
-    $python main.py --dataroot data/Market-1501-v15.09.15 --cuda --nepoch 150 --out histogram --manualSeed 18
+    $ python main.py --dataroot data/Market-1501-v15.09.15 --cuda --nepoch 150 --out histogram --manualSeed 18
