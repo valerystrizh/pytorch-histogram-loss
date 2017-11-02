@@ -2,13 +2,13 @@
 
 This is implementation of the paper [Learning Deep Embeddings with Histogram Loss](https://arxiv.org/pdf/1611.00822.pdf) in PyTorch
 
-Features should be l2 normalized before feeding to histogram loss. Module [L2Normalization](https://github.com/valerystrizh/pytorch-histogram-loss/blob/master/layers.py#L30) is used.
-
 ## Implementation details
 
 Pretrained resnet 34 is used. Shared dropout with 0.5 probability and one fully connected layer with 512 neurons are added to the end of the net.
 
-[Market-1501 Dataset](http://www.liangzheng.org/Project/project_reid.html) is used.
+Features should be [l2 normalized](https://github.com/valerystrizh/pytorch-histogram-loss/blob/master/layers.py#L30) before feeding to histogram loss.
+
+[Market-1501 Dataset](http://www.liangzheng.org/Project/project_reid.html) is used for training and testing.
 
 Loss, rank 1 and mAP metrics are visualized using [visdom](https://github.com/facebookresearch/visdom) tools.
 
