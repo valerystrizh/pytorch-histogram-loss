@@ -2,7 +2,7 @@
 
 This is implementation of the paper [Learning Deep Embeddings with Histogram Loss](https://arxiv.org/pdf/1611.00822.pdf) in PyTorch
 
-Features should be l2 normalized before feeding to histogram loss. Module L2Normalization from layers.py is used.
+Features should be l2 normalized before feeding to histogram loss. Module [[L2Normalization]](https://github.com/valerystrizh/pytorch-histogram-loss/blob/master/layers.py#L30) is used.
 
 ## Implementation details
 
