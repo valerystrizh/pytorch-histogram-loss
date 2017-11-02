@@ -1,31 +1,32 @@
 import numpy as np
 import os
 import torch
+import torch.nn as nn
 
 from scipy.spatial.distance import cdist
 from torch.autograd import Variable
 
-class Evaluation():
-    def __init__(self, df_test, df_query):
+class Evaluation(torch.nn.Module):
+    def __init__(self, df_test, df_query, dataloader_test, dataloader_query, cuda):
         self.test_labels, self.test_camera_labels, self.test_image_paths, self.test_image_names = get_info(df_test)
         self.query_labels, self.query_camera_labels, self.query_image_paths, self.query_image_names = get_info(df_query)
         self.Index = make_index(self.test_image_names, self.query_image_names)
+        self.dataloader_test = dataloader_test
+        self.dataloader_query = dataloader_query
+        self.cuda = cuda
     
-    def ranks_map_(self, model, dataloader_test, dataloader_query, nr, remove_fc, use_gpu):
+    def ranks_map(self, model, nr, remove_fc=False):
         if remove_fc:
             model = nn.Sequential(*list(model.children())[:-1])
 
-        gescr_gallery = get_descr(dataloader_test, model, use_gpu)
-        gescr_query = get_descr(dataloader_query, model, use_gpu)
+        gescr_gallery = get_descr(self.dataloader_test, model, self.cuda)
+        gescr_query = get_descr(self.dataloader_query, model, self.cuda)
 
         ranks, img_names_sorted, places = ranking('cosine', gescr_query, self.query_image_names, gescr_gallery, self.test_image_names, nr, self.Index)
         ranks_w = ranks / len(gescr_query) * 1.0
         mAP_ = mAP(gescr_query, self.query_image_names, gescr_gallery, self.test_image_names, nr, self.Index)
 
         return ranks_w, mAP_
-
-    def ranks_map(self, model, dataloders, use_gpu):
-        return self.ranks_map_(model, dataloders['test'], dataloders['query'], 50, False, use_gpu)
     
 def get_descr(dataloder, model, use_gpu):
     result = []
