@@ -23,11 +23,11 @@ from torchvision import models, transforms
 from visualizer import Visualizer
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--dataroot', required=True, help='path to dataset')
 parser.add_argument('--batch_size', type=int, default=128, help='batch size for train, default=128')
 parser.add_argument('--batch_size_test', type=int, default=64, help='batch size for test and query dataloaders for market dataset, default=64')
 parser.add_argument('--checkpoints_path', default='.', help='folder to output model checkpoints, default="."')
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
-parser.add_argument('--dataroot', required=True, help='path to dataset')
 parser.add_argument('--dropout_prob', type=float, default=0.5, help='probability of dropout, default=0.5')
 parser.add_argument('--lr', type=float, default=1e-4, help='learning rate, default=1e-4')
 parser.add_argument('--lr_init', type=float, default=1e-2, help='learning rate for first stage of training only fc layer, default=1e-2')
