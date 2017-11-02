@@ -21,19 +21,20 @@ class Visualizer():
 
     def plot_quality(self, name, quality, epoch):
         if not hasattr(self, 'plot_data'):
-            self.plot_data = {'X':[],'Y':[], 'legend':list(quality.keys())}
-            self.plot_data['X'].append(epoch)
-            self.plot_data['Y'].append([quality[k] for k in self.plot_data['legend']])
+            self.plot_data = {}
+        if name not in self.plot_data:
+            self.plot_data[name] = {'X':[],'Y':[], 'legend':list(quality.keys())}
+            self.plot_data[name]['X'].append(epoch)
+            self.plot_data[name]['Y'].append([quality[k] for k in self.plot_data[name]['legend']])
             
-        self.plot_data['X'].append(epoch)
-        self.plot_data['Y'].append([quality[k] for k in self.plot_data['legend']])
-        print(self.plot_data)
+        self.plot_data[name]['X'].append(epoch)
+        self.plot_data[name]['Y'].append([quality[k] for k in self.plot_data[name]['legend']])
         self.vis.line(
-            X=np.stack([np.array(self.plot_data['X'])]*len(self.plot_data['legend']),1),
-            Y=np.array(self.plot_data['Y']),
+            X=np.stack([np.array(self.plot_data[name]['X'])]*len(self.plot_data[name]['legend']), 1),
+            Y=np.array(self.plot_data[name]['Y']),
             opts={
                 'title': name,
-                'legend': self.plot_data['legend'],
+                'legend': self.plot_data[name]['legend'],
                 'xlabel': 'epoch'},
             win=name)
 
