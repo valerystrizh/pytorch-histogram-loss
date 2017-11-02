@@ -55,6 +55,6 @@ optional arguments:
   --visdom_port 	VISDOM_PORT		port for visdom visualization
 ```
 
-    $ #start visdom server
+    $ #start visdom server if use visdom_port argument
     $ python -m visdom.server -port 8099
     $ python main.py --dataroot data/Market-1501-v15.09.15 --cuda --market --checkpoints_path histogram --manual_seed 18 --visdom_port 8099
