@@ -66,15 +66,15 @@ paths = {
 }
 
 def create_df(dir, size=-1):
-    df_paths = glob(dir)
+    df_paths = glob('%s/*' % dir)
     df = pd.DataFrame({'path': df_paths})
+    df['label'] = df.path.apply(lambda x: int(x.split('/')[-1].split('_')[0]))
     return df[:size]
 
 def create_market_df(x):
-        df = create_df(os.path.join(opt.dataroot, paths[x]))
-        df['label'] = df.path.apply(lambda x: int(x.split('/')[-1].split('_')[0]))
-        df['camera'] = df.path.apply(lambda x: int(x.split('/')[-1].split('_')[1].split('s')[0].split('c')[1]))
-        df['name'] = df.path.apply(lambda x: x.split('/')[-1])
+    df = create_df(os.path.join(opt.dataroot, paths[x]))
+    df['camera'] = df.path.apply(lambda x: int(x.split('/')[-1].split('_')[1].split('s')[0].split('c')[1]))
+    df['name'] = df.path.apply(lambda x: x.split('/')[-1])
 
         return df
 
@@ -154,13 +154,13 @@ def train(optimizer, scheduler, epoch_start, epoch_end):
 
         epoch_loss = running_loss / len(dataloader)
 
-        vis.quality('Loss', {'Loss': epoch_loss}, epoch, opt.nepoch + 1)
+        vis.quality('Loss', {'Loss': epoch_loss}, epoch, opt.nepoch)
 
         if opt.market:
             if epoch % 5 == 0:
                 model.train(False)
                 ranks, mAP = ranks, mAP = evaluation.ranks_map(model, 50)
-                vis.quality('Rank1 and mAP', {'Rank1': ranks[1], 'mAP': mAP}, epoch, opt.nepoch + 1)
+                vis.quality('Rank1 and mAP', {'Rank1': ranks[1], 'mAP': mAP}, epoch, opt.nepoch)
 
         if epoch % 10 == 0:
             torch.save(model, '{}/finetuned_histogram_e{}.pt'.format(opt.checkpoints_path, epoch))
