@@ -25,7 +25,7 @@ class HistogramLoss(torch.nn.Module):
         classes_size = classes.size()[0]
         classes_eq = (classes.repeat(classes_size, 1)  == classes.view(-1, 1).repeat(1, classes_size)).data
         dists = torch.mm(features, features.transpose(0, 1))
-        s_inds = torch.triu(torch.ones(dists.size()), 1).byte()
+        s_inds = torch.triu(torch.ones(classes_eq.size()), 1).byte()
         if self.use_gpu:
             s_inds= s_inds.cuda()
         pos_inds = classes_eq[s_inds].repeat(self.tsize, 1)
