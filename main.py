@@ -66,7 +66,7 @@ paths = {
 }
 
 def create_df(dir, size=-1):
-    df_paths = glob('%s/*' % dir)
+    df_paths = glob(dir)
     df = pd.DataFrame({'path': df_paths})
     df['label'] = df.path.apply(lambda x: int(x.split('/')[-1].split('_')[0]))
     return df[:size]
@@ -76,12 +76,12 @@ def create_market_df(x):
     df['camera'] = df.path.apply(lambda x: int(x.split('/')[-1].split('_')[1].split('s')[0].split('c')[1]))
     df['name'] = df.path.apply(lambda x: x.split('/')[-1])
 
-        return df
+    return df
 
 if opt.market:
     market_df = create_market_df('train')
 else:
-    market_df = create_df(os.path.join(opt.dataroot))
+    market_df = create_df(os.path.join(opt.dataroot,'*.jpg'))
     
 labels_encoder = LabelEncoder().fit(market_df['label'])
 data_transform = transforms.Compose([
