@@ -10,14 +10,14 @@ class ImageDatasetTest(Dataset):
         self.img_paths = np.array(paths)
         self.transform = transform
 
-    def __len__(self):
-        return len(self.img_paths)
-
     def __getitem__(self, index):
         img_path = self.img_paths[index]
         img = self.transform(Image.open(img_path))
         return img
         
+    def __len__(self):
+        return len(self.img_paths)
+    
 class ImageDatasetTrain(Dataset):
     def __init__(self, paths, labels, transform):
         self.img_paths = np.array(paths)
