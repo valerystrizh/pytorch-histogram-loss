@@ -10,16 +10,18 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision
 
-from datasets import MarketDatasetTest, MarketDatasetTrain
-from evaluation import Evaluation
 from glob import glob
-from layers import DropoutShared, L2Normalization
-from loss import HistogramLoss
 from sklearn.preprocessing import LabelEncoder
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from torchvision import models, transforms
+
+from datasets import ImageDatasetTest, ImageDatasetTrain
+from evaluation import Evaluation
+from layers import DropoutShared, L2Normalization
+from losses import HistogramLoss
+from samplers import HistogramSampler
 from visualizer import Visualizer
 
 parser = argparse.ArgumentParser()
@@ -58,49 +60,30 @@ if torch.cuda.is_available() and not opt.cuda:
     print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
 vis = Visualizer(opt.checkpoints_path, opt.visdom_port)
-    
-paths = {
-    'train': 'bounding_box_train/*.jpg',
-    'test': 'bounding_box_test/*.jpg',
-    'query': 'query/*.jpg',
-}
 
-def create_df(dir, size=-1):
-    df_paths = glob('%s/*' % dir)
+def create_df(dataroot, size=-1):
+    df_paths = glob(dataroot)
     df = pd.DataFrame({'path': df_paths})
     df['label'] = df.path.apply(lambda x: int(x.split('/')[-1].split('_')[0]))
     return df[:size]
 
-def create_market_df(x):
-    df = create_df(os.path.join(opt.dataroot, paths[x]))
-    df['camera'] = df.path.apply(lambda x: int(x.split('/')[-1].split('_')[1].split('s')[0].split('c')[1]))
-    df['name'] = df.path.apply(lambda x: x.split('/')[-1])
-
-        return df
-
-if opt.market:
-    market_df = create_market_df('train')
+if not opt.market:
+    df_train = create_df(opt.dataroot)
 else:
-    market_df = create_df(os.path.join(opt.dataroot))
+    def create_market_df(x):
+        df = create_df(os.path.join(opt.dataroot, paths[x]))
+        df['camera'] = df.path.apply(lambda x: int(x.split('/')[-1].split('_')[1].split('s')[0].split('c')[1]))
+        df['name'] = df.path.apply(lambda x: x.split('/')[-1])
+        return df
     
-labels_encoder = LabelEncoder().fit(market_df['label'])
-data_transform = transforms.Compose([
-    transforms.Scale([256, 256]),
-    transforms.RandomCrop(224),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
-
-dataset = MarketDatasetTrain(market_df['path'], 
-                             market_df['label'], 
-                             labels_encoder, 
-                             data_transform, 
-                             opt.batch_size)
-dataloader = DataLoader(dataset, shuffle=True, batch_size=1)
-
-if opt.market:
-    market_dfs_test = {
+    paths = {
+        'train': 'bounding_box_train/*.jpg',
+        'test': 'bounding_box_test/*.jpg',
+        'query': 'query/*.jpg',
+    }
+    
+    df_train = create_market_df('train')
+    dfs_test = {
         x: create_market_df(x) for x in ['test', 'query']
     }
     
@@ -112,8 +95,8 @@ if opt.market:
     ])
     
     datasets_test = {
-        x: MarketDatasetTest(
-            market_dfs_test[x]['path'], 
+        x: ImageDatasetTest(
+            dfs_test[x]['path'], 
             transform=data_transform_test,
         ) for x in ['test', 'query']
     }
@@ -127,11 +110,21 @@ if opt.market:
         ) for x in datasets_test.keys()
     }
 
-    evaluation = Evaluation(market_dfs_test['test'], market_dfs_test['query'], dataloaders_test['test'], dataloaders_test['query'], opt.cuda)
+    evaluation = Evaluation(dfs_test['test'], dfs_test['query'], dataloaders_test['test'], dataloaders_test['query'], opt.cuda)
     
-criterion = HistogramLoss(opt.nbins, opt.cuda)
+data_transform = transforms.Compose([
+    transforms.Scale([256, 256]),
+    transforms.RandomCrop(224),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
 
-def train(optimizer, scheduler, epoch_start, epoch_end):
+dataset = ImageDatasetTrain(df_train['path'], df_train['label'], data_transform)
+histogram_sampler = HistogramSampler(df_train['label'], opt.batch_size)
+dataloader = DataLoader(dataset, batch_sampler=histogram_sampler, num_workers=opt.nworkers)
+
+def train(optimizer, criterion, scheduler, epoch_start, epoch_end):
     for epoch in range(epoch_start, epoch_end + 1):
         scheduler.step()
         model.train(True)
@@ -159,7 +152,7 @@ def train(optimizer, scheduler, epoch_start, epoch_end):
         if opt.market:
             if epoch % 5 == 0:
                 model.train(False)
-                ranks, mAP = ranks, mAP = evaluation.ranks_map(model, 50)
+                ranks, mAP = ranks, mAP = evaluation.ranks_map(model, 2)
                 vis.quality('Rank1 and mAP', {'Rank1': ranks[1], 'mAP': mAP}, epoch, opt.nepoch)
 
         if epoch % 10 == 0:
@@ -181,9 +174,10 @@ if opt.cuda:
 print(model)
 print('Train only last layer\n')
 
+criterion = HistogramLoss(opt.nbins, opt.cuda)
 optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=opt.lr_init)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-train(optimizer, scheduler, 1, 20)
+train(optimizer, criterion, scheduler, 1, 20)
 
 print('Train all layers\n')
 for param in model.parameters():
@@ -191,4 +185,5 @@ for param in model.parameters():
     
 optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=opt.lr)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
-train(optimizer, scheduler, 21, opt.nepoch)
+train(optimizer, criterion, scheduler, 21, opt.nepoch)
+
