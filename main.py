@@ -21,7 +21,7 @@ from datasets import ImageDatasetTest, ImageDatasetTrain
 from evaluation import Evaluation
 from layers import DropoutShared, L2Normalization
 from losses import HistogramLoss
-from samplers import HistogramSampler
+from samplers import MarketSampler
 from visualizer import Visualizer
 
 parser = argparse.ArgumentParser()
@@ -30,13 +30,14 @@ parser.add_argument('--batch_size', type=int, default=128, help='batch size for 
 parser.add_argument('--batch_size_test', type=int, default=64, help='batch size for test and query dataloaders for market dataset, default=64')
 parser.add_argument('--checkpoints_path', default='.', help='folder to output model checkpoints, default="."')
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
-parser.add_argument('--dropout_prob', type=float, default=0.5, help='probability of dropout, default=0.5')
+parser.add_argument('--dropout_prob', type=float, default=0.7, help='probability of dropout, default=0.7')
 parser.add_argument('--lr', type=float, default=1e-4, help='learning rate, default=1e-4')
-parser.add_argument('--lr_init', type=float, default=1e-2, help='learning rate for first stage of training only fc layer, default=1e-2')
+parser.add_argument('--lr_fc', type=float, default=1e-1, help='learning rate to train fc layer, default=1e-1')
 parser.add_argument('--manual_seed', type=int, help='manual seed')
 parser.add_argument('--market', action='store_true', help='calculate rank1 and mAP on Market dataset; dataroot should contain folders "bounding_box_train", "bounding_box_test", "query"')
 parser.add_argument('--nbins', default=150, type=int, help='number of bins in histograms, default=150')
 parser.add_argument('--nepoch', type=int, default=150, help='number of epochs to train, default=150')
+parser.add_argument('--nepoch_fc', type=int, default=0, help='number of epochs to train fc layer, default=0')
 parser.add_argument('--nworkers', default=10, type=int, help='number of data loading workers, default=10')
 parser.add_argument('--visdom_port', type=int, help='port for visdom visualization')
 
@@ -68,7 +69,7 @@ def create_df(dataroot, size=-1):
     return df[:size]
 
 if not opt.market:
-    df_train = create_df(opt.dataroot)
+    df_train = create_df(os.path.join(opt.dataroot, '*.jpg'))
 else:
     def create_market_df(x):
         df = create_df(os.path.join(opt.dataroot, paths[x]))
@@ -88,7 +89,7 @@ else:
     }
     
     data_transform_test = transforms.Compose([
-        transforms.Scale([256, 256]),
+        transforms.Resize([256, 256]),
         transforms.CenterCrop(224),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
@@ -113,7 +114,7 @@ else:
     evaluation = Evaluation(dfs_test['test'], dfs_test['query'], dataloaders_test['test'], dataloaders_test['query'], opt.cuda)
     
 data_transform = transforms.Compose([
-    transforms.Scale([256, 256]),
+    transforms.Resize([256, 256]),
     transforms.RandomCrop(224),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
@@ -121,8 +122,8 @@ data_transform = transforms.Compose([
 ])
 
 dataset = ImageDatasetTrain(df_train['path'], df_train['label'], data_transform)
-histogram_sampler = HistogramSampler(df_train['label'], opt.batch_size)
-dataloader = DataLoader(dataset, batch_sampler=histogram_sampler, num_workers=opt.nworkers)
+sampler = MarketSampler(df_train['label'], opt.batch_size)
+dataloader = DataLoader(dataset, batch_sampler=sampler, num_workers=opt.nworkers)
 
 def train(optimizer, criterion, scheduler, epoch_start, epoch_end):
     for epoch in range(epoch_start, epoch_end + 1):
@@ -150,12 +151,12 @@ def train(optimizer, criterion, scheduler, epoch_start, epoch_end):
         vis.quality('Loss', {'Loss': epoch_loss}, epoch, opt.nepoch)
 
         if opt.market:
-            if epoch % 5 == 0:
+            if (epoch - 1) % 5 == 0:
                 model.train(False)
                 ranks, mAP = ranks, mAP = evaluation.ranks_map(model, 2)
                 vis.quality('Rank1 and mAP', {'Rank1': ranks[1], 'mAP': mAP}, epoch, opt.nepoch)
 
-        if epoch % 10 == 0:
+        if (epoch - 1) % 10 == 0:
             torch.save(model, '{}/finetuned_histogram_e{}.pt'.format(opt.checkpoints_path, epoch))
 
 model = models.resnet34(pretrained=True)  
@@ -164,26 +165,26 @@ for param in model.parameters():
     
 num_ftrs = model.fc.in_features
 model.fc = torch.nn.Sequential()
-model.fc.add_module('shared_dropout', DropoutShared(p=.5, use_gpu=True))
+if opt.dropout_prob > 0:
+    model.fc.add_module('shared_dropout', DropoutShared(p=opt.dropout_prob, use_gpu=True))
 model.fc.add_module('fc', nn.Linear(num_ftrs, 512))
 model.fc.add_module('l2normalization', L2Normalization())
-
 if opt.cuda:
     model = model.cuda()
-    
 print(model)
-print('Train only last layer\n')
 
-criterion = HistogramLoss(opt.nbins, opt.cuda)
-optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=opt.lr_init)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-train(optimizer, criterion, scheduler, 1, 20)
+criterion = HistogramLoss(num_steps=opt.nbins, cuda=opt.cuda)
 
-print('Train all layers\n')
+if opt.nepoch_fc > 0:
+    print('\nTrain fc layer\n')
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=opt.lr_fc)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    train(optimizer, criterion, scheduler, 1, opt.nepoch_fc)
+
+print('\nTrain all layers\n')
 for param in model.parameters():
     param.requires_grad = True
     
 optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=opt.lr)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
-train(optimizer, criterion, scheduler, 21, opt.nepoch)
-
+train(optimizer, criterion, scheduler, opt.nepoch_fc + 1, opt.nepoch)
