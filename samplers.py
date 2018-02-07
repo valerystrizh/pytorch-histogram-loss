@@ -2,7 +2,7 @@ import numpy as np
 
 from torch.utils.data.sampler import Sampler    
 
-class HistogramSampler(Sampler):
+class MarketSampler(Sampler):
     def __init__(self, labels, batch_size):
         self.labels = np.array(labels)
         self.labels_unique = np.unique(labels)
