@@ -20,41 +20,55 @@ mAP:	54.71
 ## Usage
 ```
 main.py [-h] 
-	--dataroot DATAROOT
+	--dataroot DATAROOT 
 	[--batch_size BATCH_SIZE]
 	[--batch_size_test BATCH_SIZE_TEST]
 	[--checkpoints_path CHECKPOINTS_PATH] 
-	[--cuda] 
-	[--dropout_prob DROPOUT_PROB] 
-	[--lr LR]
-	[--lr_init LR_INIT] 
+	[--cuda]
+	--dropout_prob DROPOUT_PROB] 
+	[--lr LR] 
+	[--lr_fc LR_FC]
 	[--manual_seed MANUAL_SEED] 
-	[--market]
-	[--nbins NBINS] 
+	[--market] 
+	[--nbins NBINS]
 	[--nepoch NEPOCH] 
+	[--nepoch_fc NEPOCH_FC] 
 	[--nworkers NWORKERS]
 	[--visdom_port VISDOM_PORT]
 
+
 required argument:
-  --dataroot 		DATAROOT   		path to dataset
+  --dataroot DATAROOT   path to dataset
   
 optional arguments:
-  -h, --help					show this help message and exit
-  --batch_size  	BATCH_SIZE 		batch size for train, default=128
-  --batch_size_test 	BATCH_SIZE_TEST 	batch size for test and query dataloaders for market dataset, default=64
-  --checkpoints_path 	CHECKPOINTS_PATH	folder to output model checkpoints, default="."
-  --cuda                			enables cuda
-  --dropout_prob 	DROPOUT_PROB		probability of dropout, default=0.5
-  --lr 			LR               	learning rate, default=1e-4
-  --lr_init 		LR_INIT     		learning rate for first stage of training only fc layer, default=1e-2
-  --manual_seed 	MANUAL_SEED		manual seed
-  --market              			calculate rank1 and mAP on Market dataset; dataroot should contain folders "bounding_box_train", "bounding_box_test", "query"
-  --nbins 		NBINS         		number of bins in histograms, default=150
-  --nepoch 		NEPOCH       		number of epochs to train, default=150
-  --nworkers 		NWORKERS   		number of data loading workers, default=10
-  --visdom_port 	VISDOM_PORT		port for visdom visualization
+  -h, --help            show this help message and exit
+  --batch_size BATCH_SIZE
+                        batch size for train, default=128
+  --batch_size_test BATCH_SIZE_TEST
+                        batch size for test and query dataloaders for market
+                        dataset, default=64
+  --checkpoints_path CHECKPOINTS_PATH
+                        folder to output model checkpoints, default="."
+  --cuda                enables cuda
+  --dropout_prob DROPOUT_PROB
+                        probability of dropout, default=0.7
+  --lr LR               learning rate, default=1e-4
+  --lr_fc LR_FC         learning rate to train fc layer, default=1e-1
+  --manual_seed MANUAL_SEED
+                        manual seed
+  --market              calculate rank1 and mAP on Market dataset; dataroot
+                        should contain folders "bounding_box_train",
+                        "bounding_box_test", "query"
+  --nbins NBINS         number of bins in histograms, default=150
+  --nepoch NEPOCH       number of epochs to train, default=150
+  --nepoch_fc NEPOCH_FC
+                        number of epochs to train fc layer, default=0
+  --nworkers NWORKERS   number of data loading workers, default=10
+  --visdom_port VISDOM_PORT
+                        port for visdom visualization
+
 ```
 
     $ #start visdom server if use visdom_port argument
     $ python -m visdom.server -port 8099
-    $ python main.py --dataroot data/Market-1501-v15.09.15 --cuda --market --checkpoints_path histogram --manual_seed 18 --visdom_port 8099
+    $ python main.py --dataroot ../data/Market-1501-v15.09.15 --cuda --checkpoints_path histogram --manual_seed 18 --visdom_port 8099 --nepoch_fc 0 --market --dropout_prob 0
