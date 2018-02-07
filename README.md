@@ -4,7 +4,7 @@ This is implementation of the paper [Learning Deep Embeddings with Histogram Los
 
 ## Implementation details
 
-Pretrained resnet 34 is used. Shared dropout with 0.5 probability and one fully connected layer with 512 neurons are added to the end of the net.
+Pretrained resnet 34 is used. [Shared dropout](https://github.com/valerystrizh/pytorch-histogram-loss/blob/master/layers.py#L4) and fully connected layer with 512 neurons are added to the end of the net.
 
 Features should be [l2 normalized](https://github.com/valerystrizh/pytorch-histogram-loss/blob/master/layers.py#L30) before feeding to histogram loss.
 
