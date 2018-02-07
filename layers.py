@@ -12,7 +12,7 @@ class DropoutShared(nn.Module):
 
     def forward(self, input):
         if self.training:
-            index = torch.range(0, input.size()[1] - 1)[torch.Tensor(input.size()[1]).uniform_(0, 1).le(self.p)].long()
+            index = torch.arange(0, input.size()[1])[torch.Tensor(input.size()[1]).uniform_(0, 1).le(self.p)].long()
             input_cloned = input.clone()
             if self.use_gpu:
                 input_cloned[:, index.cuda()] = 0
@@ -24,7 +24,7 @@ class DropoutShared(nn.Module):
 
     def __repr__(self):
         return self.__class__.__name__ + ' (' \
-            + 'p = ' + str(self.p) + ')'
+            + 'p=' + str(self.p) + ')'
         
         
 class L2Normalization(nn.Module):
