@@ -189,10 +189,10 @@ def getAveragePrecision(query, sorted_gallery_filenames, Index):
             k +=1
             deltaR = 0
         
-        if tp == len(Index[query]['pos']):
-            return ap
         precision = tp*1.0/k * deltaR
         ap += precision
+        if tp == len(Index[query]['pos']):
+            return ap
         
     return ap
 
