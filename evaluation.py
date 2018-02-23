@@ -29,12 +29,12 @@ class Evaluation(nn.Module):
         test_sorted_cameras = self.test_cameras[dists_argsort]
         sorted_distractors = self.distractors[dists_argsort]
         
-        junk = (self.junk[dists_argsort] | 
+        sorted_junk = (self.junk[dists_argsort] | 
                (test_sorted_labels == self.query_labels) & 
                (test_sorted_cameras == self.query_cameras))
-        junk_cumsum = np.cumsum(junk, 1)
+        junk_cumsum = np.cumsum(sorted_junk, 1)
         
-        eq_inds = np.where(~sorted_distractors & ~junk & (self.query_labels == test_sorted_labels))
+        eq_inds = np.where(~sorted_distractors & ~sorted_junk & (self.query_labels == test_sorted_labels))
         eq_inds_rows = eq_inds[0]
         eq_inds_cols = eq_inds[1]
         eq_inds_first = np.unique(eq_inds_rows, return_index=True)[1]
