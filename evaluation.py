@@ -37,10 +37,11 @@ class Evaluation(nn.Module):
         eq_inds = np.where(~sorted_distractors & ~junk & (self.query_labels == test_sorted_labels))
         eq_inds_rows = eq_inds[0]
         eq_inds_cols = eq_inds[1]
+        eq_inds_first = np.unique(eq_inds_rows, return_index=True)[1]
         eq_inds_cols_nojunk = eq_inds_cols - junk_cumsum[eq_inds_rows, eq_inds_cols]
 
-        ranks = self.ranks(maxrank, eq_inds_rows, eq_inds_cols_nojunk)
-        mAP = self.mAP(eq_inds_rows, eq_inds_cols_nojunk)
+        ranks = self.ranks(maxrank, eq_inds_first, eq_inds_cols_nojunk)
+        mAP = self.mAP(eq_inds_first, eq_inds_cols_nojunk)
 
         return ranks, mAP
     
@@ -58,8 +59,7 @@ class Evaluation(nn.Module):
 
         return np.array(result)
 
-    def ranks(self, maxrank, eq_inds_rows, eq_inds_cols_nojunk):
-        eq_inds_first = np.unique(eq_inds_rows, return_index=True)[1]
+    def ranks(self, maxrank, eq_inds_first, eq_inds_cols_nojunk):
         eq_inds_cols_first_nojunk = eq_inds_cols_nojunk[eq_inds_first]
         eq_inds_cols_first_nojunk_maxrank = eq_inds_cols_first_nojunk[eq_inds_cols_first_nojunk < maxrank]
         ranks = np.zeros(maxrank)
@@ -68,12 +68,11 @@ class Evaluation(nn.Module):
 
         return ranks / self.query_labels.shape[0]
     
-    def mAP(self, eq_inds_rows, eq_inds_cols_nojunk):
-        eq_inds_unique = np.unique(eq_inds_rows, return_index=True)[1]
-        labels_count = np.append(eq_inds_unique[1:], eq_inds_rows.shape[0]) - eq_inds_unique
-        inds_start_repeat = np.repeat(eq_inds_unique, labels_count)
+    def mAP(self, eq_inds_first, eq_inds_cols_nojunk):
+        labels_count = np.append(eq_inds_first[1:], eq_inds_cols_nojunk.shape[0]) - eq_inds_first
+        inds_start_repeat = np.repeat(eq_inds_first, labels_count)
         labels_count_repeat = np.repeat(labels_count, labels_count)
-        average_precision = np.sum((np.arange(eq_inds_rows.shape[0]) - inds_start_repeat + 1) /
+        average_precision = np.sum((np.arange(eq_inds_cols_nojunk.shape[0]) - inds_start_repeat + 1) /
                                    (eq_inds_cols_nojunk + 1) / labels_count_repeat)
 
         return average_precision / self.query_labels.shape[0]
