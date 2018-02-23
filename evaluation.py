@@ -25,7 +25,6 @@ class Evaluation(nn.Module):
         query_descr = self.descriptors(self.dataloader_query, model)
         dists = cdist(query_descr, test_descr, 'cosine')
         dists_argsort = np.argsort(dists)
-        
         test_sorted_labels = self.test_labels[dists_argsort]
         test_sorted_cameras = self.test_cameras[dists_argsort]
         sorted_distractors = self.distractors[dists_argsort]
@@ -38,7 +37,6 @@ class Evaluation(nn.Module):
         eq_inds = np.where(~sorted_distractors & ~junk & (self.query_labels == test_sorted_labels))
         eq_inds_rows = eq_inds[0]
         eq_inds_cols = eq_inds[1]
-            
         eq_inds_cols_nojunk = eq_inds_cols - junk_cumsum[eq_inds_rows, eq_inds_cols]
 
         ranks = self.ranks(maxrank, eq_inds_rows, eq_inds_cols_nojunk)
@@ -68,7 +66,7 @@ class Evaluation(nn.Module):
         np.add.at(ranks, eq_inds_cols_first_nojunk_maxrank, 1)
         ranks = np.cumsum(ranks)
 
-        return ranks[:maxrank] / self.query_labels.shape[0]
+        return ranks / self.query_labels.shape[0]
     
     def mAP(self, eq_inds_rows, eq_inds_cols_nojunk):
         eq_inds_unique = np.unique(eq_inds_rows, return_index=True)[1]
