@@ -1,9 +1,6 @@
 import numpy as np
-import os
 import torch
 import torch.nn as nn
-
-from scipy.spatial.distance import cdist
 from torch.autograd import Variable
 
 class Evaluation(nn.Module):
@@ -12,33 +9,60 @@ class Evaluation(nn.Module):
         self.test_cameras = np.array(df_test['camera'])
         self.query_labels = np.expand_dims(np.array(df_query['label']), 1)
         self.query_cameras = np.expand_dims(np.array(df_query['camera']), 1)
-        self.distractors = np.array(df_test['label'] == 0)
-        self.junk = np.array(df_test['label'] == -1)
+        self.distractors = self.test_labels == 0
+        self.junk = self.test_labels == -1
+        
+        self.test_labels = torch.Tensor(self.test_labels)
+        self.test_cameras = torch.Tensor(self.test_cameras)
+        self.query_labels = torch.Tensor(self.query_labels)
+        self.query_cameras = torch.Tensor(self.query_cameras)
+        self.distractors = torch.Tensor(self.distractors.astype(int))
+        self.junk = torch.Tensor(self.junk.astype(int))
+        
+        if cuda:
+            self.test_labels = self.test_labels.cuda()
+            self.test_cameras = self.test_cameras.cuda()
+            self.query_labels = self.query_labels.cuda()
+            self.query_cameras = self.query_cameras.cuda()
+            self.distractors = self.distractors.cuda()
+            self.junk = self.junk.cuda()
+
         self.dataloader_test = dataloader_test
         self.dataloader_query = dataloader_query
         self.cuda = cuda
         
-    def ranks_map(self, model, maxrank, remove_fc=False):
+    def ranks_map(self, model, maxrank, remove_fc=False, features_normalized=True):
         if remove_fc:
             model = nn.Sequential(*list(model.children())[:-1])
-        test_descr = self.descriptors(self.dataloader_test, model)
-        query_descr = self.descriptors(self.dataloader_query, model)
-        dists = cdist(query_descr, test_descr, 'cosine')
-        dists_argsort = np.argsort(dists)
-        test_sorted_labels = self.test_labels[dists_argsort]
-        test_sorted_cameras = self.test_cameras[dists_argsort]
-        sorted_distractors = self.distractors[dists_argsort]
+        test_descriptors = self.descriptors(self.dataloader_test, model)
+        query_descriptors = self.descriptors(self.dataloader_query, model)
         
-        sorted_junk = (self.junk[dists_argsort] | 
-               (test_sorted_labels == self.query_labels) & 
-               (test_sorted_cameras == self.query_cameras))
-        junk_cumsum = np.cumsum(sorted_junk, 1)
+        # cosine distances between query and test descriptors
+        dists = 1 - torch.mm(query_descriptors, test_descriptors.transpose(1, 0))
+        if not features_normalized:
+            dists = dists / torch.norm(query_descriptors, 2, 1).unsqueeze(1)
+            dists = dists / torch.norm(test_descriptors, 2, 1)
+        dists_sorted, dists_argsort = torch.sort(dists)
+            
+        # sort test data by dists
+        test_sorted_labels = torch.gather(self.test_labels.repeat(self.query_labels.shape[0], 1), 1, dists_argsort)
+        test_sorted_cameras = torch.gather(self.test_cameras.repeat(self.query_labels.shape[0], 1), 1, dists_argsort)
+        sorted_distractors = torch.gather(self.distractors.repeat(self.query_labels.shape[0], 1), 1, dists_argsort).byte()
+        sorted_junk = torch.gather(self.junk.repeat(self.query_labels.shape[0], 1), 1, dists_argsort).byte()
         
-        eq_inds = np.where(~sorted_distractors & ~sorted_junk & (self.query_labels == test_sorted_labels))
-        eq_inds_rows = eq_inds[0]
-        eq_inds_cols = eq_inds[1]
-        eq_inds_first = np.unique(eq_inds_rows, return_index=True)[1]
-        eq_inds_cols_nojunk = eq_inds_cols - junk_cumsum[eq_inds_rows, eq_inds_cols]
+        # junk are not taken into account unlike distractors, so junk cumulative sum is calculated to be used later
+        sorted_junk = (sorted_junk | 
+                       (test_sorted_labels == self.query_labels) & 
+                       (test_sorted_cameras == self.query_cameras))
+        junk_cumsum = torch.cumsum(sorted_junk.int(), 1)
+        
+        # indices where query labels equal test labels without distractors and junk
+        eq_inds = torch.nonzero(~sorted_distractors & ~sorted_junk & (self.query_labels == test_sorted_labels))
+        eq_inds_rows = eq_inds[:, 0].long()
+        eq_inds_cols = eq_inds[:, 1].long()
+        eq_inds_first = np.unique(eq_inds_rows.cpu().numpy(), return_index=True)[1]
+        # subtract junk cumsum from columns of indices
+        eq_inds_cols_nojunk = (eq_inds_cols.int() - junk_cumsum[eq_inds_rows, eq_inds_cols]).cpu().numpy()
 
         ranks = self.ranks(maxrank, eq_inds_first, eq_inds_cols_nojunk)
         mAP = self.mAP(eq_inds_first, eq_inds_cols_nojunk)
@@ -46,33 +70,33 @@ class Evaluation(nn.Module):
         return ranks, mAP
     
     def descriptors(self, dataloder, model):
-        result = []
-
+        result = torch.FloatTensor()
+        if self.cuda:
+            result = result.cuda()
         for data in dataloder:
             if self.cuda:
-                inputs = Variable(data.cuda())
-            else:
-                inputs = Variable(data)
-
+                data = data.cuda()
+            inputs = Variable(data)
             outputs = model(inputs)
-            result.extend(outputs.data.squeeze().cpu().numpy())
+            result = torch.cat((result, outputs.data), 0)
 
-        return np.array(result)
+        return result
 
-    def ranks(self, maxrank, eq_inds_first, eq_inds_cols_nojunk):
-        eq_inds_cols_first_nojunk = eq_inds_cols_nojunk[eq_inds_first]
-        eq_inds_cols_first_nojunk_maxrank = eq_inds_cols_first_nojunk[eq_inds_cols_first_nojunk < maxrank]
+    def ranks(self, maxrank, eq_inds_first, eq_inds_cols):
+        eq_inds_cols_first = eq_inds_cols[eq_inds_first]
+        eq_inds_cols_first_maxrank = eq_inds_cols_first[eq_inds_cols_first < maxrank]
         ranks = np.zeros(maxrank)
-        np.add.at(ranks, eq_inds_cols_first_nojunk_maxrank, 1)
+        np.add.at(ranks, eq_inds_cols_first_maxrank, 1)
         ranks = np.cumsum(ranks)
 
         return ranks / self.query_labels.shape[0]
     
-    def mAP(self, eq_inds_first, eq_inds_cols_nojunk):
-        labels_count = np.append(eq_inds_first[1:], eq_inds_cols_nojunk.shape[0]) - eq_inds_first
+    def mAP(self, eq_inds_first, eq_inds_cols):
+        labels_count = np.append(eq_inds_first[1:], eq_inds_cols.shape[0]) - eq_inds_first
         inds_start_repeat = np.repeat(eq_inds_first, labels_count)
         labels_count_repeat = np.repeat(labels_count, labels_count)
-        average_precision = np.sum((np.arange(eq_inds_cols_nojunk.shape[0]) - inds_start_repeat + 1) /
-                                   (eq_inds_cols_nojunk + 1) / labels_count_repeat)
+        average_precision = np.sum((np.arange(eq_inds_cols.shape[0]) - inds_start_repeat + 1) /
+                                   (eq_inds_cols + 1) / 
+                                   labels_count_repeat)
 
         return average_precision / self.query_labels.shape[0]
