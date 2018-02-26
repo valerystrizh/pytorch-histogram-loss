@@ -42,13 +42,16 @@ class Evaluation(nn.Module):
         if not features_normalized:
             dists = dists / torch.norm(query_descriptors, 2, 1).unsqueeze(1)
             dists = dists / torch.norm(test_descriptors, 2, 1)
-        dists_sorted, dists_argsort = torch.sort(dists)
+        dists_sorted, dists_sorted_inds = torch.sort(dists)
             
-        # sort test data by dists
-        test_sorted_labels = torch.gather(self.test_labels.repeat(self.query_labels.shape[0], 1), 1, dists_argsort)
-        test_sorted_cameras = torch.gather(self.test_cameras.repeat(self.query_labels.shape[0], 1), 1, dists_argsort)
-        sorted_distractors = torch.gather(self.distractors.repeat(self.query_labels.shape[0], 1), 1, dists_argsort).byte()
-        sorted_junk = torch.gather(self.junk.repeat(self.query_labels.shape[0], 1), 1, dists_argsort).byte()
+        # sort test data by indices which sort distances
+        def sort_by_dists_inds(data):
+            return torch.gather(data.repeat(self.query_labels.shape[0], 1), 1, dists_sorted_inds)
+        
+        test_sorted_labels = sort_by_dists_inds(self.test_labels)
+        test_sorted_cameras = sort_by_dists_inds(self.test_cameras)
+        sorted_distractors = sort_by_dists_inds(self.distractors).byte()
+        sorted_junk = sort_by_dists_inds(self.junk).byte()
         
         # junk are not taken into account unlike distractors, so junk cumulative sum is calculated to be used later
         sorted_junk = (sorted_junk | 
