@@ -38,10 +38,14 @@ class Evaluation(nn.Module):
         query_descriptors = self.descriptors(self.dataloader_query, model)
         
         # cosine distances between query and test descriptors
-        dists = 1 - torch.mm(query_descriptors, test_descriptors.transpose(1, 0))
-        if not features_normalized:
+        if features_normalized:
+            dists = 1 - torch.mm(query_descriptors, test_descriptors.transpose(1, 0))
+        else:
+            dists = torch.mm(query_descriptors, test_descriptors.transpose(1, 0))
             dists = dists / torch.norm(query_descriptors, 2, 1).unsqueeze(1)
             dists = dists / torch.norm(test_descriptors, 2, 1)
+            dists = 1 - dists
+            
         dists_sorted, dists_sorted_inds = torch.sort(dists)
             
         # sort test data by indices which sort distances
