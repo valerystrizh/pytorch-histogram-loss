@@ -32,10 +32,12 @@ class Evaluation(nn.Module):
         self.cuda = cuda
         
     def ranks_map(self, model, maxrank, remove_fc=False, features_normalized=True):
+        model.eval()
         if remove_fc:
             model = nn.Sequential(*list(model.children())[:-1])
         test_descriptors = self.descriptors(self.dataloader_test, model)
         query_descriptors = self.descriptors(self.dataloader_query, model)
+        model.train()
         
         # cosine distances between query and test descriptors
         if features_normalized:
