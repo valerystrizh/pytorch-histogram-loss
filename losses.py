@@ -14,12 +14,12 @@ class HistogramLoss(torch.nn.Module):
     def forward(self, features, classes):
         def histogram(inds, size):
             s_repeat_ = s_repeat.clone()
-            indsa = (delta_repeat == (self.t - self.step)) & inds
-            indsb = (delta_repeat == self.t) & inds
+            indsa = (delta_repeat == t) & inds
+            indsb = (delta_repeat == (t + step)) & inds
             s_repeat_[~(indsb|indsa)] = 0
-            s_repeat_[indsa] = (s_repeat_ - Variable(self.t) + self.step)[indsa] / self.step
-            s_repeat_[indsb] =  (-s_repeat_ + Variable(self.t) + self.step)[indsb] / self.step
-            
+            s_repeat_[indsa] = (s_repeat_ - Variable(t) + step)[indsa] / step
+            s_repeat_[indsb] =  (-s_repeat_ + Variable(t) + step)[indsb] / step
+
             return s_repeat_.sum(1) / size
         
         classes_size = classes.size()[0]
@@ -30,11 +30,11 @@ class HistogramLoss(torch.nn.Module):
             s_inds= s_inds.cuda()
         pos_inds = classes_eq[s_inds].repeat(self.tsize, 1)
         neg_inds = ~classes_eq[s_inds].repeat(self.tsize, 1)
-        pos_size = classes_eq[s_inds].sum().item() / 2
-        neg_size = (~classes_eq[s_inds]).sum().item() / 2
+        pos_size = classes_eq[s_inds].sum().item()
+        neg_size = (~classes_eq[s_inds]).sum().item()
         s = dists[s_inds].view(1, -1)
         s_repeat = s.repeat(self.tsize, 1)
-        delta_repeat = (torch.floor((s_repeat.data + 1) / self.step) * self.step - 1).float()
+        delta_repeat = (torch.floor((s_repeat.data) / step) * step).float()
         
         histogram_pos = histogram(pos_inds, pos_size)
         histogram_neg = histogram(neg_inds, neg_size)
