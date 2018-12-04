@@ -18,30 +18,10 @@ rank-1: 77.02
 mAP:	54.71
 
 ## Usage
+Change [config file](https://github.com/valerystrizh/pytorch-histogram-loss/blob/master/config) to set your parameters
+
 ```
-main.py [-h] 
-	--dataroot DATAROOT 
-	[--batch_size BATCH_SIZE]
-	[--batch_size_test BATCH_SIZE_TEST]
-	[--checkpoints_path CHECKPOINTS_PATH] 
-	[--cuda]
-	[--dropout_prob DROPOUT_PROB] 
-	[--lr LR] 
-	[--lr_fc LR_FC]
-	[--manual_seed MANUAL_SEED] 
-	[--market] 
-	[--nbins NBINS]
-	[--nepoch NEPOCH] 
-	[--nepoch_fc NEPOCH_FC] 
-	[--nworkers NWORKERS]
-	[--visdom_port VISDOM_PORT]
-
-
-required argument:
   --dataroot DATAROOT   path to dataset
-  
-optional arguments:
-  -h, --help            show this help message and exit
   --batch_size BATCH_SIZE
                         batch size for train, default=128
   --batch_size_test BATCH_SIZE_TEST
@@ -66,9 +46,10 @@ optional arguments:
   --nworkers NWORKERS   number of data loading workers, default=10
   --visdom_port VISDOM_PORT
                         port for visdom visualization
+			
 
 ```
 
-    $ #start visdom server if use visdom_port argument
+    $ #start visdom server
     $ python -m visdom.server -port 8099
-    $ python main.py --dataroot ../data/Market-1501-v15.09.15 --cuda --checkpoints_path histogram --manual_seed 18 --visdom_port 8099 --nepoch_fc 0 --market --dropout_prob 0
+    $ python main.py 
