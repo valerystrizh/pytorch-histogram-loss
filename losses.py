@@ -30,8 +30,8 @@ class HistogramLoss(torch.nn.Module):
             s_inds= s_inds.cuda()
         pos_inds = classes_eq[s_inds].repeat(self.tsize, 1)
         neg_inds = ~classes_eq[s_inds].repeat(self.tsize, 1)
-        pos_size = classes_eq[s_inds].sum()
-        neg_size = (~classes_eq[s_inds]).sum()
+        pos_size = classes_eq[s_inds].sum().tolist() / 2
+        neg_size = (~classes_eq[s_inds]).sum().tolist() / 2
         s = dists[s_inds].view(1, -1)
         s_repeat = s.repeat(self.tsize, 1)
         delta_repeat = (torch.floor((s_repeat.data + 1) / self.step) * self.step - 1).float()
@@ -43,8 +43,8 @@ class HistogramLoss(torch.nn.Module):
         if self.cuda:
             histogram_pos_inds = histogram_pos_inds.cuda()
         histogram_pos_repeat[histogram_pos_inds] = 0
-        histogram_pos_cdf = histogram_pos_repeat.sum(0)
-        loss = torch.sum(histogram_neg * histogram_pos_cdf)
+        histogram_pos_cdf_by_step = histogram_pos_repeat.sum(0)
+        loss = torch.sum(histogram_neg * histogram_pos_cdf_by_step)
         
         return loss
     
