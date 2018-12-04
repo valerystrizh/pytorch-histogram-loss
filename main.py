@@ -151,7 +151,7 @@ for param in model.parameters():
 num_ftrs = model.fc.in_features
 model.fc = torch.nn.Sequential()
 if opt['dropout_prob'] > 0:
-    model.fc.add_module('shared_dropout', nn.Dropout(opt['dropout_prob']))
+    model.fc.add_module('dropout', nn.Dropout(opt['dropout_prob']))
 model.fc.add_module('fc', nn.Linear(num_ftrs, 512))
 model.fc.add_module('l2normalization', L2Normalization())
 if opt['cuda']:
