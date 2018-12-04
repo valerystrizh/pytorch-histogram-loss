@@ -69,7 +69,7 @@ class Evaluation(nn.Module):
         eq_inds_cols = eq_inds[:, 1].long()
         eq_inds_first = np.unique(eq_inds_rows.cpu().numpy(), return_index=True)[1]
         # subtract junk cumsum from columns of indices
-        eq_inds_cols_nojunk = (eq_inds_cols.int() - junk_cumsum[eq_inds_rows, eq_inds_cols]).cpu().numpy()
+        eq_inds_cols_nojunk = (eq_inds_cols - junk_cumsum[eq_inds_rows, eq_inds_cols]).cpu().numpy()
 
         ranks = self.ranks(maxrank, eq_inds_first, eq_inds_cols_nojunk)
         mAP = self.mAP(eq_inds_first, eq_inds_cols_nojunk)
