@@ -1,0 +1,46 @@
+[opt]
+
+# path to dataset
+dataroot = ../data/Market-1501-v15.09.15
+
+# batch size for train
+batch_size = 128
+
+# batch size for test and query dataloaders for market dataset
+batch_size_test = 64
+
+# folder to output model checkpoints
+checkpoints_path = histogram
+
+# enables cuda
+cuda = 1
+
+# probability of dropout
+dropout_prob = 0.7
+
+# learning rate
+lr = 1e-4
+
+# learning rate to train fc layer
+lr_fc = 1e-1
+
+# manual seed
+manual_seed = 18
+
+# calculate rank1 and mAP on Market dataset; dataroot should contain folders "bounding_box_train
+market = 1
+
+# number of bins in histograms
+nbins = 150
+
+# number of epochs to train
+nepoch = 150
+
+# number of epochs to train fc layer
+nepoch_fc = 0
+
+# number of data loading workers
+nworkers = 10
+
+# port for visdom visualization
+visdom_port = 8099
