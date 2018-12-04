@@ -111,7 +111,7 @@ sampler = MarketSampler(df_train['label'], opt['batch_size'])
 dataloader = DataLoader(dataset, batch_sampler=sampler, num_workers=opt['nworkers'])
 
 def train(optimizer, criterion, scheduler, epoch_start, epoch_end):
-    for epoch in range(epoch_start, epoch_end + 1):
+    for epoch in range(epoch_start, epoch_end):
         scheduler.step()
         model.train(True)
         running_loss = .0
@@ -164,7 +164,7 @@ if opt['nepoch_fc'] > 0:
     print('\nTrain fc layer\n')
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=opt['lr_fc'])
     scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-    train(optimizer, criterion, scheduler, 1, opt['nepoch_fc'])
+    train(optimizer, criterion, scheduler, 1, opt['nepoch_fc'] + 1)
 
 print('\nTrain all layers\n')
 for param in model.parameters():
@@ -172,4 +172,4 @@ for param in model.parameters():
     
 optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=opt['lr'])
 scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
-train(optimizer, criterion, scheduler, opt['nepoch_fc'] + 1, opt['nepoch'])
+train(optimizer, criterion, scheduler, opt['nepoch_fc'] + 1, opt['nepoch'] + 1)
