@@ -6,7 +6,7 @@ class HistogramLoss(torch.nn.Module):
         super(HistogramLoss, self).__init__()
         self.step = 2 / (num_steps - 1)
         self.cuda = cuda
-        self.t = torch.range(-1, 1, self.step).view(-1, 1)
+        self.t = torch.arange(-1, 1+self.step, self.step).view(-1, 1)
         self.tsize = self.t.size()[0]
         if self.cuda:
             self.t = self.t.cuda()
@@ -14,11 +14,11 @@ class HistogramLoss(torch.nn.Module):
     def forward(self, features, classes):
         def histogram(inds, size):
             s_repeat_ = s_repeat.clone()
-            indsa = (delta_repeat == t) & inds
-            indsb = (delta_repeat == (t + step)) & inds
+            indsa = (delta_repeat == self.t) & inds
+            indsb = (delta_repeat == (self.t + self.step)) & inds
             s_repeat_[~(indsb|indsa)] = 0
-            s_repeat_[indsa] = (s_repeat_ - Variable(t) + step)[indsa] / step
-            s_repeat_[indsb] =  (-s_repeat_ + Variable(t) + step)[indsb] / step
+            s_repeat_[indsa] = (s_repeat_ - Variable(self.t) + self.step)[indsa] / self.step
+            s_repeat_[indsb] =  (-s_repeat_ + Variable(self.t) + self.step)[indsb] / self.step
 
             return s_repeat_.sum(1) / size
         
