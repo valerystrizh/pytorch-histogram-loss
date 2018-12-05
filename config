@@ -31,7 +31,7 @@ manual_seed = 18
 market = 1
 
 # number of bins in histograms
-nbins = 150
+nbins = 151
 
 # number of epochs to train
 nepoch = 150
