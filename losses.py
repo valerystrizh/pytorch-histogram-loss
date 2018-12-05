@@ -15,7 +15,7 @@ class HistogramLoss(torch.nn.Module):
         def histogram(inds, size):
             s_repeat_ = s_repeat.clone()
             indsa = (s_repeat_floor == self.t) & inds
-            assert indsa.nonzero().size()[0] == size, ('Too many bins')
+            assert indsa.nonzero().size()[0] == size, ('Not good number of bins')
             zeros = torch.zeros((1, indsa.size()[1])).byte()
             if self.cuda:
                 zeros = zeros.cuda()
