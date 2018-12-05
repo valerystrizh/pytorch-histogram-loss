@@ -1,4 +1,6 @@
 import torch
+
+from numpy.testing import assert_almost_equal
 from torch.autograd import Variable
 
 class HistogramLoss(torch.nn.Module):
@@ -42,7 +44,11 @@ class HistogramLoss(torch.nn.Module):
         s_repeat_floor = (torch.floor(s_repeat.data / self.step) * self.step).float()
         
         histogram_pos = histogram(pos_inds, pos_size)
+        assert_almost_equal(histogram_pos.sum().item(), 1, decimal=2, 
+                            err_msg='Not good positive histogram', verbose=True)
         histogram_neg = histogram(neg_inds, neg_size)
+        assert_almost_equal(histogram_neg.sum().item(), 1, decimal=2, 
+                            err_msg='Not good negative histogram', verbose=True)
         histogram_pos_repeat = histogram_pos.view(-1, 1).repeat(1, histogram_pos.size()[0])
         histogram_pos_inds = torch.tril(torch.ones(histogram_pos_repeat.size()), -1).byte()
         if self.cuda:
@@ -52,4 +58,4 @@ class HistogramLoss(torch.nn.Module):
         loss = torch.sum(histogram_neg * histogram_pos_cdf)
         
         return loss
-    
+   
