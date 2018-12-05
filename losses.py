@@ -35,7 +35,7 @@ class HistogramLoss(torch.nn.Module):
         neg_size = (~classes_eq[s_inds]).sum().item()
         s = dists[s_inds].view(1, -1)
         s_repeat = s.repeat(self.tsize, 1)
-        s_repeat_floor = (torch.floor((s_repeat.data + 1) / self.step) * self.step - 1).float()
+        s_repeat_floor = (torch.floor(s_repeat.data / self.step) * self.step).float()
         
         histogram_pos = histogram(pos_inds, pos_size)
         histogram_neg = histogram(neg_inds, neg_size)
