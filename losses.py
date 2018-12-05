@@ -26,7 +26,7 @@ class HistogramLoss(torch.nn.Module):
 
             return s_repeat_.sum(1) / size
         
-        features, classes = outputs.double(), labels.double()
+        features, classes = features.double(), classes.double()
         classes_size = classes.size()[0]
         classes_eq = (classes.repeat(classes_size, 1)  == classes.view(-1, 1).repeat(1, classes_size)).data
         dists = torch.mm(features, features.transpose(0, 1))
