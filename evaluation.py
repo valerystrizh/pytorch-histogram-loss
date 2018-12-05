@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-class Evaluation(nn.Module):
+class Evaluation():
     def __init__(self, df_test, df_query, dataloader_test, dataloader_query, cuda):
         self.test_labels = np.array(df_test['label'])
         self.test_cameras = np.array(df_test['camera'])
