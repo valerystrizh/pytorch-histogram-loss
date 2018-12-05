@@ -14,15 +14,15 @@ class HistogramLoss(torch.nn.Module):
     def forward(self, features, classes):
         def histogram(inds, size):
             s_repeat_ = s_repeat.clone()
-            indsa = (delta_repeat == self.t) & inds
-            indsb = (delta_repeat == (self.t + self.step)) & inds
+            indsa = (s_repeat_floor == self.t) & inds
+            indsb = (s_repeat_floor == (self.t - self.step)) & inds
             s_repeat_[~(indsb|indsa)] = 0
-            s_repeat_[indsa] = (s_repeat_ - Variable(self.t).double() + self.step)[indsa] / self.step
-            s_repeat_[indsb] =  (-s_repeat_ + Variable(self.t).double() + self.step)[indsb] / self.step
+            s_repeat_[indsa] = (s_repeat_ - Variable(self.t))[indsa] / self.step
+            s_repeat_[indsb] =  (-s_repeat_ + Variable(self.t))[indsb] / self.step
 
             return s_repeat_.sum(1) / size
         
-        features, classes = features.double(), classes.double()
+        features, classes = features, classes
         classes_size = classes.size()[0]
         classes_eq = (classes.repeat(classes_size, 1)  == classes.view(-1, 1).repeat(1, classes_size)).data
         dists = torch.mm(features, features.transpose(0, 1))
@@ -35,7 +35,7 @@ class HistogramLoss(torch.nn.Module):
         neg_size = (~classes_eq[s_inds]).sum().item()
         s = dists[s_inds].view(1, -1)
         s_repeat = s.repeat(self.tsize, 1)
-        delta_repeat = (torch.floor((s_repeat.data + 1) / self.step) * self.step - 1).float()
+        s_repeat_floor = (torch.floor((s_repeat.data + 1) / self.step) * self.step - 1).float()
         
         histogram_pos = histogram(pos_inds, pos_size)
         histogram_neg = histogram(neg_inds, neg_size)
@@ -44,8 +44,8 @@ class HistogramLoss(torch.nn.Module):
         if self.cuda:
             histogram_pos_inds = histogram_pos_inds.cuda()
         histogram_pos_repeat[histogram_pos_inds] = 0
-        histogram_pos_cdf_by_step = histogram_pos_repeat.sum(0)
-        loss = torch.sum(histogram_neg * histogram_pos_cdf_by_step)
+        histogram_pos_cdf = histogram_pos_repeat.sum(0)
+        loss = torch.sum(histogram_neg * histogram_pos_cdf)
         
         return loss
     
