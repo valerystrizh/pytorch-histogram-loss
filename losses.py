@@ -15,7 +15,10 @@ class HistogramLoss(torch.nn.Module):
         def histogram(inds, size):
             s_repeat_ = s_repeat.clone()
             indsa = (s_repeat_floor == self.t) & inds
-            indsb = (s_repeat_floor == (self.t - self.step)) & inds
+            zeros = torch.zeros((1, indsa.size()[1])).byte()
+            if self.cuda:
+                zeros = zeros.cuda()
+            indsb = torch.cat((zeros, indsa))[:self.tsize, :]
             s_repeat_[~(indsb|indsa)] = 0
             s_repeat_[indsa] = (s_repeat_ - Variable(self.t))[indsa] / self.step
             s_repeat_[indsb] =  (-s_repeat_ + Variable(self.t))[indsb] / self.step
