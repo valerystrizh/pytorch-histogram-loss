@@ -23,11 +23,12 @@ class HistogramLoss(torch.nn.Module):
                 zeros = zeros.cuda()
             indsb = torch.cat((zeros, indsa))[:self.tsize, :]
             s_repeat_[~(indsb|indsa)] = 0
-            s_repeat_[indsa] = (s_repeat_ - Variable(self.t))[indsa] / self.step
-            s_repeat_[indsb] =  (-s_repeat_ + Variable(self.t))[indsb] / self.step
+            s_repeat_[indsa] = (s_repeat_ - Variable(self.t).double())[indsa] / self.step
+            s_repeat_[indsb] =  (-s_repeat_ + Variable(self.t).double())[indsb] / self.step
 
             return s_repeat_.sum(1) / size
         
+        features, classes = features.double(), classes.double()
         classes_size = classes.size()[0]
         classes_eq = (classes.repeat(classes_size, 1)  == classes.view(-1, 1).repeat(1, classes_size)).data
         dists = torch.mm(features, features.transpose(0, 1))
