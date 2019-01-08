@@ -20,7 +20,8 @@ class HistogramLoss(torch.nn.Module):
             indsa = (s_repeat_floor - (self.t - self.step) > -eps) & (s_repeat_floor - (self.t - self.step) < eps) & inds
             assert indsa.nonzero().size()[0] == size, ('eps is inadequate')
             zeros = torch.zeros((1, indsa.size()[1])).byte()
-            zeros = zeros.cuda()
+            if self.cuda:
+                zeros = zeros.cuda()
             indsb = torch.cat((indsa, zeros))[1:, :]
             s_repeat_[~(indsb|indsa)] = 0
             s_repeat_[indsa] = (s_repeat_ - self.t + self.step)[indsa] / self.step
