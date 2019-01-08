@@ -10,9 +10,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision
 
-from functools import partial
 from glob import glob
-from torch.autograd import Variable
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from torchvision import models, transforms
@@ -118,7 +116,7 @@ def train(optimizer, criterion, scheduler, epoch_start, epoch_end):
 
         for data in dataloader:
             inputs, labels = data
-            inputs, labels = Variable(inputs.squeeze()), Variable(labels.squeeze())
+            inputs, labels = inputs.squeeze(), labels.squeeze()
 
             if opt['cuda']:
                 inputs, labels = inputs.cuda(), labels.cuda()
@@ -136,12 +134,12 @@ def train(optimizer, criterion, scheduler, epoch_start, epoch_end):
         vis.quality('Loss', {'Loss': epoch_loss}, epoch, opt['nepoch'])
 
         if opt['market']:
-            if (epoch - 1) % 5 == 0:
+            if epoch % 5 == 0:
                 model.train(False)
                 ranks, mAP = ranks, mAP = evaluation.ranks_map(model, 2)
                 vis.quality('Rank1 and mAP', {'Rank1': ranks[1], 'mAP': mAP}, epoch, opt['nepoch'])
 
-        if (epoch - 1) % 10 == 0:
+        if epoch % 10 == 0:
             torch.save(model, '{}/finetuned_histogram_e{}.pt'.format(opt['checkpoints_path'], epoch))
 
 model = models.resnet34(pretrained=True)  
