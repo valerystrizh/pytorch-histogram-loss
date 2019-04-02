@@ -1,5 +1,6 @@
 from __future__ import print_function
 import argparse
+import json
 import numpy as np
 import os
 import pandas as pd
@@ -15,7 +16,6 @@ from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from torchvision import models, transforms
 
-from config_reader import config_reader
 from datasets import ImageDataset
 from evaluation import Evaluation
 from layers import L2Normalization
@@ -23,7 +23,8 @@ from losses import HistogramLoss
 from samplers import MarketSampler
 from visualizer import Visualizer
 
-opt = config_reader()
+with open('config') as json_file:  
+    opt = json.load(json_file)
 print(opt)
 
 try:
