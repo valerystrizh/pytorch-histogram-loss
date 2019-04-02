@@ -23,7 +23,9 @@ class HistogramLoss(torch.nn.Module):
                 zeros = zeros.cuda()
             indsb = torch.cat((indsa, zeros))[1:, :]
             s_repeat_[~(indsb|indsa)] = 0
+            # indsa corresonds to the second condition of the second equation of the paper
             s_repeat_[indsa] = (s_repeat_ - self.t + self.step)[indsa] / self.step
+            # indsb corresponds to the first condition of the second equation of the paper
             s_repeat_[indsb] =  (-s_repeat_ + self.t + self.step)[indsb] / self.step
 
             return s_repeat_.sum(1) / size
