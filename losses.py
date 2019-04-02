@@ -2,12 +2,11 @@ import torch
 
 from numpy.testing import assert_almost_equal
 
-eps = 1e-5
-
 class HistogramLoss(torch.nn.Module):
     def __init__(self, num_steps, cuda=True):
         super(HistogramLoss, self).__init__()
         self.step = 2 / (num_steps - 1)
+        self.eps = 1 / num_steps
         self.cuda = cuda
         self.t = torch.arange(-1, 1+self.step, self.step).view(-1, 1)
         self.tsize = self.t.size()[0]
@@ -17,8 +16,8 @@ class HistogramLoss(torch.nn.Module):
     def forward(self, features, classes):
         def histogram(inds, size):
             s_repeat_ = s_repeat.clone()
-            indsa = (s_repeat_floor - (self.t - self.step) > -eps) & (s_repeat_floor - (self.t - self.step) < eps) & inds
-            assert indsa.nonzero().size()[0] == size, ('eps is inadequate')
+            indsa = (s_repeat_floor - (self.t - self.step) > -self.eps) & (s_repeat_floor - (self.t - self.step) < self.eps) & inds
+            assert indsa.nonzero().size()[0] == size, ('Another number of bins should be used')
             zeros = torch.zeros((1, indsa.size()[1])).byte()
             if self.cuda:
                 zeros = zeros.cuda()
@@ -29,10 +28,10 @@ class HistogramLoss(torch.nn.Module):
 
             return s_repeat_.sum(1) / size
         
-        features, classes = features, classes
         classes_size = classes.size()[0]
         classes_eq = (classes.repeat(classes_size, 1)  == classes.view(-1, 1).repeat(1, classes_size)).data
         dists = torch.mm(features, features.transpose(0, 1))
+        assert ((dists > 1 + self.eps).sum().item() + (dists < -1 - self.eps).sum().item()) == 0, 'L2 normalization should be used'
         s_inds = torch.triu(torch.ones(classes_eq.size()), 1).byte()
         if self.cuda:
             s_inds= s_inds.cuda()
@@ -45,10 +44,10 @@ class HistogramLoss(torch.nn.Module):
         s_repeat_floor = (torch.floor(s_repeat.data / self.step) * self.step).float()
         
         histogram_pos = histogram(pos_inds, pos_size)
-        assert_almost_equal(histogram_pos.sum().item(), 1, decimal=2, 
+        assert_almost_equal(histogram_pos.sum().item(), 1, decimal=1, 
                             err_msg='Not good positive histogram', verbose=True)
         histogram_neg = histogram(neg_inds, neg_size)
-        assert_almost_equal(histogram_neg.sum().item(), 1, decimal=2, 
+        assert_almost_equal(histogram_neg.sum().item(), 1, decimal=1, 
                             err_msg='Not good negative histogram', verbose=True)
         histogram_pos_repeat = histogram_pos.view(-1, 1).repeat(1, histogram_pos.size()[0])
         histogram_pos_inds = torch.tril(torch.ones(histogram_pos_repeat.size()), -1).byte()
